@@ -1,0 +1,31 @@
+Name: system-linux
+Version: 0.0.1
+Category: System
+Stability: experimental
+Synopsis: Bindings to Linux-specific parts of the C library.
+Description:
+  This package provides bindings to Linux-specific parts of the C library,
+  namely epoll(7), inotify(7), signalfd(2), eventfd(2) and timerfd.
+
+Author: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
+Maintainer: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
+Copyright: 2010 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
+License: BSD3
+License-File: LICENSE
+
+Cabal-Version: >= 1.6.0
+Build-Type: Simple
+
+Library
+  Build-Depends: base < 5, unix, data-flags >= 0.0.3, posix-timer >= 0.0.2
+  Extensions: CPP, ForeignFunctionInterface, TemplateHaskell,
+              GeneralizedNewtypeDeriving
+  Hs-Source-Dirs: src
+  GHC-Options: -Wall
+  Exposed-Modules:
+    System.Linux.EPoll
+    System.Linux.INotify
+    System.Linux.SignalFd
+    System.Linux.TimerFd
+    System.Linux.EventFd
+
