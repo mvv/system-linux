@@ -23,7 +23,8 @@ import Foreign.C.Error (throwErrnoIf_, throwErrnoIfMinus1, throwErrnoIfMinus1_)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
 import System.Posix.Types (Fd(..), CSsize)
-import System.Posix.Timer (TimeSpec(..), ITimerSpec(..))
+import System.Posix.Clock (TimeSpec)
+import System.Posix.Timer (ITimerSpec(..))
 
 #include <sys/timerfd.h>
 
@@ -52,7 +53,7 @@ configure fd absolute value interval =
       throwErrnoIfMinus1_ "TimerFd.configure" $
         c_timerfd_settime
           fd (if absolute then #{const TFD_TIMER_ABSTIME} else 0) pNew pOld
-      (ITimerSpec oldInterval oldValue) <- peek pOld
+      ITimerSpec oldInterval oldValue <- peek pOld
       return (oldValue, oldInterval)
                                
 -- | Get the amount of time left until the next expiration and the interval
@@ -61,7 +62,7 @@ timeLeft :: Fd -> IO (TimeSpec, TimeSpec)
 timeLeft fd = do
   alloca $ \p -> do
     throwErrnoIfMinus1_ "TimerFd.timeLeft" $ c_timerfd_gettime fd p
-    (ITimerSpec interval value) <- peek p
+    ITimerSpec interval value <- peek p
     return (value, interval)
 
 -- | Get the associated timer expiration count (resets the counter).

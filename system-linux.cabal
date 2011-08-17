@@ -5,27 +5,51 @@ Stability: experimental
 Synopsis: Bindings to Linux-specific parts of the C library.
 Description:
   This package provides bindings to Linux-specific parts of the C library,
-  namely epoll(7), inotify(7), signalfd(2), eventfd(2) and timerfd.
+  namely epoll(7), inotify(7), signalfd(2), eventfd(2), timerfd and
+  netlink(7).
+
+Homepage: https://github.com/mvv/posix-socket
+Bug-Reports: https://github.com/mvv/posix-socket/issues
 
 Author: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 Maintainer: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
-Copyright: 2010 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
+Copyright: 2010-2011 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 License: BSD3
 License-File: LICENSE
 
 Cabal-Version: >= 1.6.0
 Build-Type: Simple
 
+Extra-Source-Files: include/system-linux.macros.h
+
+Source-Repository head
+  Type: git
+  Location: https://github.com/mvv/system-linux.git
+
 Library
-  Build-Depends: base < 5, unix, data-flags >= 0.0.3, posix-timer >= 0.0.2
-  Extensions: CPP, ForeignFunctionInterface, TemplateHaskell,
-              GeneralizedNewtypeDeriving
+  Build-Depends:
+    base              >= 4 && < 5,
+    unix              >= 2.4,
+    data-default      >= 0.2,
+    data-flags        >= 0.0.3,
+    data-ip           >= 0.0.1,
+    posix-timer       >= 0.2,
+    posix-socket      >= 0.0.1,
+    bytestring        >= 0.9.1.10,
+    cereal            >= 0.3.3,
+    transformers-base >= 0.1
   Hs-Source-Dirs: src
+  Include-Dirs: include
   GHC-Options: -Wall
   Exposed-Modules:
+    System.Linux.Clock
     System.Linux.EPoll
     System.Linux.INotify
     System.Linux.SignalFd
     System.Linux.TimerFd
     System.Linux.EventFd
+    System.Linux.Netlink
+    System.Linux.Netlink.Route
+  Other-Modules:
+    System.Linux.Netlink.Internal
 

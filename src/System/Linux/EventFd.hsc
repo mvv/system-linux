@@ -1,5 +1,8 @@
-{-# LANGUAGE CPP, ForeignFunctionInterface, TemplateHaskell #-}
+{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- | This module provides bindings to eventfd(2).
 module System.Linux.EventFd (
@@ -30,32 +33,30 @@ $(bitmaskWrapper "CreateFlags" ''CInt [''Storable]
      ("closeOnExecFlag", #{const EFD_CLOEXEC})])
 
 -- | Create an eventfd file descriptor. See /eventfd(2)/.
-create :: CUInt -- ^ Initial value of the counter.
-       -> CreateFlags
-       -> IO Fd
+create ∷ CUInt -- ^ Initial value of the counter.
+       → CreateFlags
+       → IO Fd
 create value flags =
   throwErrnoIfMinus1 "EventFd.create" $ c_eventfd value flags
 
 -- | Read the counter value and reset it to zero.
 --   Blocks if the counter value is already a zero.
-readValue :: Fd -> IO Word64
-readValue fd =
-  alloca $ \p -> do
-    throwErrnoIf_ (/= 8) "EventFd.readValue" $ c_read fd (castPtr p) 8
-    peek p
+readValue ∷ Fd → IO Word64
+readValue fd = alloca $ \p → do
+  throwErrnoIf_ (/= 8) "EventFd.readValue" $ c_read fd (castPtr p) 8
+  peek p
 
 -- | Add the specified value to the current counter value.
 --   Blocks if the result exceeds @0xFFFFFFFFFFFFFFFE@.
-addToValue :: Fd -> Word64 -> IO ()
-addToValue fd value = do
-  with value $ \p ->
-    throwErrnoIf_ (/= 8) "EventFd.addToValue" $ c_write fd (castPtr p) 8
+addToValue ∷ Fd → Word64 → IO ()
+addToValue fd value = with value $ \p → 
+  throwErrnoIf_ (/= 8) "EventFd.addToValue" $ c_write fd (castPtr p) 8
 
 foreign import ccall unsafe "eventfd"
-  c_eventfd :: CUInt -> CreateFlags -> IO Fd
+  c_eventfd ∷ CUInt → CreateFlags → IO Fd
 
 foreign import ccall unsafe "read"
-  c_read :: Fd -> Ptr () -> CSize -> IO CSsize
+  c_read ∷ Fd → Ptr () → CSize → IO CSsize
 foreign import ccall unsafe "write"
-  c_write :: Fd -> Ptr () -> CSize -> IO CSsize
+  c_write ∷ Fd → Ptr () → CSize → IO CSsize
 
