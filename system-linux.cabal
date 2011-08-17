@@ -8,8 +8,8 @@ Description:
   namely epoll(7), inotify(7), signalfd(2), eventfd(2), timerfd and
   netlink(7).
 
-Homepage: https://github.com/mvv/posix-socket
-Bug-Reports: https://github.com/mvv/posix-socket/issues
+Homepage: https://github.com/mvv/system-linux
+Bug-Reports: https://github.com/mvv/system-linux/issues
 
 Author: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 Maintainer: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
