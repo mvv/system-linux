@@ -39,7 +39,11 @@ import Data.Flags.TH (bitmaskWrapper)
 import Foreign.Storable (Storable(..))
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Ptr (Ptr, nullPtr)
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C.Types (CInt(..))
+#else
 import Foreign.C.Types (CInt)
+#endif
 import Foreign.C.Error (errnoToIOError, eINVAL, throwErrnoIf_,
                         throwErrnoIfMinus1, throwErrnoIfMinus1_)
 import Foreign.Marshal.Alloc (alloca)

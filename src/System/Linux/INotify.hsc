@@ -44,11 +44,21 @@ import Data.Bits ((.|.), (.&.), complement)
 import Data.Flags.TH (bitmaskWrapper)
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr, castPtr, plusPtr)
-import Foreign.C.Types (CInt, CSize, CChar)
+import Foreign.C.Types (CChar)
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C.Types (CInt(..), CSize(..))
+#else
+import Foreign.C.Types (CInt, CSize)
+#endif
 import Foreign.C.String (CString, withCString, peekCAString)
 import Foreign.C.Error (throwErrnoIf, throwErrnoIfMinus1, throwErrnoIfMinus1_)
 import Foreign.Marshal.Alloc (allocaBytes)
-import System.Posix.Types (Fd(..), CSsize)
+import System.Posix.Types (Fd(..))
+#if __GLASGOW_HASKELL__ >= 703
+import System.Posix.Types (CSsize(..))
+#else
+import System.Posix.Types (CSsize)
+#endif
 import Control.Applicative((<$>))
 
 #include <linux/limits.h>

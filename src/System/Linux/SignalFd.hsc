@@ -28,11 +28,20 @@ import Control.Concurrent (threadWaitRead)
 import Foreign.Storable (Storable(..))
 import Foreign.ForeignPtr (withForeignPtr)
 import Foreign.Ptr (Ptr, WordPtr, castPtr)
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C.Types (CInt(..), CSize(..))
+#else
 import Foreign.C.Types (CInt, CSize)
+#endif
 import Foreign.C.Error (eBADF, errnoToIOError, throwErrnoIf_,
                         throwErrnoIfMinus1, throwErrnoIfMinus1_)
 import Foreign.Marshal.Alloc (alloca)
-import System.Posix.Types (Fd(..), CSsize, ProcessID, UserID, ClockTick)
+import System.Posix.Types (Fd(..), ProcessID, UserID, ClockTick)
+#if __GLASGOW_HASKELL__ >= 703
+import System.Posix.Types (CSsize(..))
+#else
+import System.Posix.Types (CSsize)
+#endif
 import System.Posix.Signals
 import System.Posix.Timer (Timer)
 import System.Posix.Process (ProcessStatus)

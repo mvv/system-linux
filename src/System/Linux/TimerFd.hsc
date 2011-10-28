@@ -18,11 +18,20 @@ import Data.Flags ()
 import Data.Flags.TH (bitmaskWrapper)
 import Foreign.Storable (Storable(..))
 import Foreign.Ptr (Ptr, castPtr)
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C.Types (CInt(..), CSize(..))
+#else
 import Foreign.C.Types (CInt, CSize)
+#endif
 import Foreign.C.Error (throwErrnoIf_, throwErrnoIfMinus1, throwErrnoIfMinus1_)
 import Foreign.Marshal.Alloc (alloca)
 import Foreign.Marshal.Utils (with)
-import System.Posix.Types (Fd(..), CSsize)
+import System.Posix.Types (Fd(..))
+#if __GLASGOW_HASKELL__ >= 703
+import System.Posix.Types (CSsize(..))
+#else
+import System.Posix.Types (CSsize)
+#endif
 import System.Posix.Clock (TimeSpec)
 import System.Posix.Timer (ITimerSpec(..))
 

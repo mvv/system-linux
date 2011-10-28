@@ -58,7 +58,12 @@ import Control.Applicative ((<$>), (<*>))
 import Control.Monad (void, forM_)
 import Control.Monad.Base
 import Control.Exception
-import Foreign.C.Types (CInt, CSize)
+import Foreign.C.Types (CInt)
+#if __GLASGOW_HASKELL__ >= 703
+import Foreign.C.Types (CSize(..))
+#else
+import Foreign.C.Types (CSize)
+#endif
 import Foreign.C.Error (Errno(..))
 import Foreign.Ptr (Ptr, castPtr, plusPtr)
 import Foreign.Storable (Storable(..))
