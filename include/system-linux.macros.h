@@ -12,15 +12,16 @@
          (unsigned long) offsetof (s, f) - offsetof (s, p) \
                          - sizeof (((s *) 0)->p));
 #define hsc_skipAndGet(s,p,f) \
+  printf("("); \
   hsc_skip(s, p, f) \
-  printf(">> get");
+  printf(" >> get)");
 #define hsc_zero(s,p,f) \
   printf("zero (%lu)", \
          (unsigned long) offsetof (s, f) - offsetof (s, p) \
                          - sizeof (((s *) 0)->p));
 #define hsc_zeroAndPut(s,p,f) \
   hsc_zero(s, p, f) \
-  printf(">> put");
+  printf(" >> put");
 
 #endif /* SYSTEM_LINUX_MACROS_H */
 

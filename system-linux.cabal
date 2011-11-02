@@ -48,6 +48,7 @@ Library
     System.Linux.SignalFd
     System.Linux.TimerFd
     System.Linux.EventFd
+    System.Linux.NetDevice
     System.Linux.Netlink
     System.Linux.Netlink.Route
   Other-Modules:

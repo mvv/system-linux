@@ -29,11 +29,51 @@ module System.Linux.Netlink.Route (
     rtRule6NlGroup,
     rtPrefix6NlGroup,
 
+    getLinkNlMsgType,
+    newLinkNlMsgType,
+    delLinkNlMsgType,
     getRouteNlMsgType,
     newRouteNlMsgType,
     delRouteNlMsgType,
 
-    IfIndex,
+    IfType(..),
+    etherIfType,
+    voidIfType,
+    noneIfType,
+
+    IfFlags(..),
+    upIfFlag,
+    broadcastIfFlag,
+    debugIfFlag,
+    loopbackIfFlag,
+    ptpIfFlag,
+    runningIfFlag,
+    noArpIfFlag,
+    promiscIfFlag,
+    noTrailersIfFlag,
+    allMultiIfFlag,
+    masterIfFlag,
+    slaveIfFlag,
+    multicastIfFlag,
+    portSelIfFlag,
+    autoMediaIfFlag,
+    dynamicIfFlag,
+    lowerUpIfFlag,
+    dormantIfFlag,
+    echoIfFlag,
+
+    HwAddr(..),
+
+    IfAttr(..),
+    nameIfAttr,
+    addrIfAttr,
+    broadcastIfAttr,
+    mtuIfAttr,
+
+    IfNlMsg(..),
+    getLinkNlMsg,
+    decodeIfNlMsg,
+
     InOrOutIf(..),
 
     RtFamily(..),
@@ -85,6 +125,8 @@ module System.Linux.Netlink.Route (
   ) where
 
 #include <sys/socket.h>
+#include <linux/netdevice.h>
+#include <linux/if_arp.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <system-linux.macros.h>
@@ -94,14 +136,16 @@ import Data.Word
 import Data.Maybe (isJust, fromJust)
 import Data.Ix (Ix)
 import Data.Flags
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Serialize
 import Data.Default
 import Data.IP.Addr
 import Control.Applicative ((<$>))
-import Control.Monad (when, MonadPlus(mzero), guard)
+import Control.Monad (when, void, MonadPlus(mzero), guard)
 import System.Posix.Socket
 import System.Posix.Socket.Inet (AF_INET)
+import System.Linux.NetDevice (IfIndex(..))
 import System.Linux.Netlink
 import System.Linux.Netlink.Internal
 
@@ -126,16 +170,80 @@ rtNlSockProto = SockProto #{const NETLINK_ROUTE}
  }
 
 #{enum NlMsgType, NlMsgType
+ , getLinkNlMsgType  = RTM_GETLINK
+ , newLinkNlMsgType  = RTM_NEWLINK
+ , delLinkNlMsgType  = RTM_DELLINK
  , getRouteNlMsgType = RTM_GETROUTE
  , newRouteNlMsgType = RTM_NEWROUTE
  , delRouteNlMsgType = RTM_DELROUTE
  }
 
-newtype IfIndex = IfIndex { unIfIndex ∷ Word32 }
-                  deriving (Typeable, Eq, Ord, Show)
+newtype IfType = IfType Word16
+                 deriving (Typeable, Eq, Ord, Show)
 
-data InOrOutIf = InIf IfIndex
-               | OutIf IfIndex
+#{enum IfType, IfType
+ , etherIfType = ARPHRD_ETHER
+ , voidIfType  = ARPHRD_VOID
+ , noneIfType  = ARPHRD_NONE
+ }
+
+newtype IfFlags = IfFlags Word32
+                  deriving (Typeable, Eq, Flags, Show)
+
+#{enum IfFlags, IfFlags
+ , upIfFlag         = IFF_UP
+ , broadcastIfFlag  = IFF_BROADCAST
+ , debugIfFlag      = IFF_DEBUG
+ , loopbackIfFlag   = IFF_LOOPBACK
+ , ptpIfFlag        = IFF_POINTOPOINT
+ , runningIfFlag    = IFF_RUNNING
+ , noArpIfFlag      = IFF_NOARP
+ , promiscIfFlag    = IFF_PROMISC
+ , noTrailersIfFlag = IFF_NOTRAILERS
+ , allMultiIfFlag   = IFF_ALLMULTI
+ , masterIfFlag     = IFF_MASTER
+ , slaveIfFlag      = IFF_SLAVE
+ , multicastIfFlag  = IFF_MULTICAST
+ , portSelIfFlag    = IFF_PORTSEL
+ , autoMediaIfFlag  = IFF_AUTOMEDIA
+ , dynamicIfFlag    = IFF_DYNAMIC
+ , lowerUpIfFlag    = IFF_LOWER_UP
+ , dormantIfFlag    = IFF_DORMANT
+ , echoIfFlag       = IFF_ECHO
+ }
+
+data HwAddr = HwAddr !ByteString
+            deriving (Typeable, Eq, Show)
+
+data IfAttr = NameIfAttr      !ByteString
+            | AddrIfAttr      !HwAddr
+            | BroadcastIfAttr !HwAddr
+            | MtuIfAttr       !Word32
+            deriving (Typeable, Eq, Show)
+
+nameIfAttr ∷ MonadPlus μ ⇒ IfAttr → μ ByteString
+nameIfAttr (NameIfAttr n) = return n
+nameIfAttr _              = mzero
+addrIfAttr ∷ MonadPlus μ ⇒ IfAttr → μ HwAddr
+addrIfAttr (AddrIfAttr a) = return a
+addrIfAttr _              = mzero
+broadcastIfAttr ∷ MonadPlus μ ⇒ IfAttr → μ HwAddr
+broadcastIfAttr (BroadcastIfAttr a) = return a
+broadcastIfAttr _                   = mzero
+mtuIfAttr ∷ MonadPlus μ ⇒ IfAttr → μ Word32
+mtuIfAttr (MtuIfAttr n) = return n
+mtuIfAttr _             = mzero
+
+data IfNlMsg = IfNlMsg { ifNlMsgNew   ∷ !Bool
+                       , ifNlMsgType  ∷ !IfType
+                       , ifNlMsgIx    ∷ !IfIndex
+                       , ifNlMsgFlags ∷ !IfFlags
+                       , ifNlMsgAttrs ∷ [IfAttr]
+                       }
+               deriving (Typeable, Show)
+
+data InOrOutIf = InIf  !IfIndex
+               | OutIf !IfIndex
                deriving (Typeable, Eq, Show)
 
 class (Show f, Default (RtFamilyAddr f), Show (RtFamilyAddr f),
@@ -255,6 +363,91 @@ deriving instance RtFamily f ⇒ Show (RtNlMsg f)
 zero ∷ Int → Put
 zero n = putByteString $ BS.replicate n 0
 {-# INLINE zero #-}
+
+getLinkNlMsg ∷ IfIndex → NlMsg
+getLinkNlMsg (IfIndex i) = NlMsg getLinkNlMsgType reqNlMsgFlag bs
+  where bs = runPut $ do
+          zero #{offsetof struct ifinfomsg, ifi_family}
+          putWord8 #{const AF_UNSPEC}
+          #{zeroAndPut struct ifinfomsg, ifi_family, ifi_type}  (0 ∷ Word16)
+          #{zero struct ifinfomsg, ifi_type,   ifi_index}
+          putWord32host i
+          #{zeroAndPut struct ifinfomsg, ifi_index,  ifi_flags} (0 ∷ Word32)
+          #{zero struct ifinfomsg, ifi_flags, ifi_change}
+          putWord32host 0xFFFFFFFF
+          zero $ align4 #{size struct ifinfomsg} - 4 -
+                 #{offsetof struct ifinfomsg, ifi_change}
+
+decodeIfNlMsg ∷ NlMsg → Maybe IfNlMsg
+decodeIfNlMsg (NlMsg tp _ bs)
+  | (tp /= newLinkNlMsgType && tp /= delLinkNlMsgType)
+    || BS.length bs < #{size struct ifinfomsg} = Nothing
+  | otherwise = either (const Nothing) Just $ (`runGet` bs) $ do
+      uncheckedSkip #{offsetof struct ifinfomsg, ifi_type}
+      iftp  ← IfType <$> getWord16host
+      ifix  ← #{skip struct ifinfomsg, ifi_type,  ifi_index} >> getWord32host
+      flags ← #{skip struct ifinfomsg, ifi_index, ifi_flags} >> getWord32host
+      uncheckedSkip $ #{size struct ifinfomsg} - 4 -
+                      #{offsetof struct ifinfomsg, ifi_flags}
+      let getAttrs attrs = do
+            r ← remaining
+            if r < #{size struct rtattr}
+            then return attrs
+            else do
+              uncheckedSkip #{offsetof struct rtattr, rta_len}
+              totalLen ← fromIntegral <$> getWord16host
+              #{skip struct rtattr, rta_len, rta_type}
+              attrType ← getWord16host
+              uncheckedSkip $ #{size struct rtattr} - 2
+                              - #{offsetof struct rtattr, rta_type}
+              if totalLen < #{size struct rtattr} || r < totalLen
+              then return attrs
+              else do
+                let attrLen = totalLen - align4 #{size struct rtattr}
+                    getAddr = case iftp of
+                      t | t == etherIfType → do
+                        guard $ attrLen == 6
+                        HwAddr <$> getBytes 6
+                      _ → HwAddr <$> getBytes attrLen
+                    cont attrs' = do
+                      if r <= align4 totalLen
+                      then return attrs'
+                      else do
+                        uncheckedSkip $ align4 totalLen - totalLen
+                        getAttrs attrs'
+                case attrType of
+                  t | t == #{const IFLA_IFNAME} → do
+                    guard $ attrLen > 0
+                    name ← getBytes $ attrLen - 1
+                    void $ getWord8
+                    cont $ NameIfAttr name : attrs
+                  t | t == #{const IFLA_ADDRESS} → do
+                    addr ← getAddr
+                    cont $ AddrIfAttr addr : attrs
+                  t | t == #{const IFLA_BROADCAST} → do
+                    addr ← getAddr
+                    cont $ BroadcastIfAttr addr : attrs
+                  t | t == #{const IFLA_MTU} → do
+                    guard $ attrLen == 4
+                    mtu ← getWord32host
+                    cont $ MtuIfAttr mtu : attrs
+                  _ → do
+                    uncheckedSkip attrLen
+                    cont attrs
+      attrs ← do
+        r ← remaining
+        let pad = align4 #{size struct ifinfomsg} - #{size struct ifinfomsg}
+        if r <= pad
+        then return []
+        else do
+          uncheckedSkip pad
+          getAttrs []
+      return $ IfNlMsg { ifNlMsgNew   = tp == newLinkNlMsgType
+                       , ifNlMsgType  = iftp
+                       , ifNlMsgIx    = IfIndex ifix
+                       , ifNlMsgFlags = IfFlags flags
+                       , ifNlMsgAttrs = attrs }
+decodeIfNlMsg _ = Nothing
 
 getRouteNlMsg ∷ ∀ f . RtFamily f
               ⇒ f → RtFamilyAddr f → RtFamilyAddr f → Maybe InOrOutIf
@@ -398,7 +591,6 @@ decodeRtNlMsg f (NlMsg tp _ bs)
                        , rtNlMsgScope = RtScope scope
                        , rtNlMsgType  = RtType rtType
                        , rtNlMsgFlags = RtFlags flags
-                       , rtNlMsgAttrs = attrs
-                       }
+                       , rtNlMsgAttrs = attrs }
 decodeRtNlMsg _ _ = Nothing
 
