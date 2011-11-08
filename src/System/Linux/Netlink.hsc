@@ -208,29 +208,29 @@ data NlError = FormatNlError
 
 instance Exception NlError
 
-nlSocket ∷ MonadBase μ IO ⇒ SockProto → μ (Socket AF_NETLINK)
+nlSocket ∷ MonadBase IO μ ⇒ SockProto → μ (Socket AF_NETLINK)
 nlSocket sp = liftBase $ do
   s ← socket AF_NETLINK datagramSockType sp
   bind s autoNlAddr `onException` close s
   return s
 
-nlAddGroup ∷ MonadBase μ IO ⇒ Socket AF_NETLINK → NlGroup → μ ()
+nlAddGroup ∷ MonadBase IO μ ⇒ Socket AF_NETLINK → NlGroup → μ ()
 nlAddGroup s = setSockOpt s NETLINK_ADD_MEMBERSHIP
 
-nlAddGroups ∷ MonadBase μ IO ⇒ Socket AF_NETLINK → [NlGroup] → μ ()
+nlAddGroups ∷ MonadBase IO μ ⇒ Socket AF_NETLINK → [NlGroup] → μ ()
 nlAddGroups s grps = forM_ grps $ nlAddGroup s
 
-nlDropGroup ∷ MonadBase μ IO ⇒ Socket AF_NETLINK → NlGroup → μ ()
+nlDropGroup ∷ MonadBase IO μ ⇒ Socket AF_NETLINK → NlGroup → μ ()
 nlDropGroup s = setSockOpt s NETLINK_DROP_MEMBERSHIP
 
-nlDropGroups ∷ MonadBase μ IO ⇒ Socket AF_NETLINK → [NlGroup] → μ ()
+nlDropGroups ∷ MonadBase IO μ ⇒ Socket AF_NETLINK → [NlGroup] → μ ()
 nlDropGroups s grps = forM_ grps $ nlDropGroup s
 
 nlMsgDataOff ∷ Int
 nlMsgDataOff = align4 #{size struct nlmsghdr}
 {-# INLINE nlMsgDataOff #-}
 
-nlRecv ∷ MonadBase μ IO
+nlRecv ∷ MonadBase IO μ
        ⇒ Socket AF_NETLINK → μ ([(NlMsg, NlSeq)], Maybe NlError)
 nlRecv s = liftBase $
   allocaBytesAligned 8192 #{alignment struct nlmsghdr} $ \p → do
@@ -278,7 +278,7 @@ nlRecv s = liftBase $
       then return ([], Just FormatNlError)
       else go 0 [] (flags .>=. truncMsgFlag)
 
-nlSend ∷ MonadBase μ IO ⇒ Socket AF_NETLINK → NlMsg → NlSeq → μ ()
+nlSend ∷ MonadBase IO μ ⇒ Socket AF_NETLINK → NlMsg → NlSeq → μ ()
 nlSend s msg sq = liftBase $
   allocaBytesAligned nlMsgDataOff #{alignment struct nlmsghdr} $ \pHdr → do
     let len = case msg of

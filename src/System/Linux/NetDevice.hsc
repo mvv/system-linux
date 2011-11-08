@@ -40,7 +40,7 @@ import System.Posix.Socket (Socket, withSocketFd)
 newtype IfIndex = IfIndex { unIfIndex ∷ Word32 }
                   deriving (Typeable, Eq, Ord, Show)
 
-getIfIndex ∷ MonadBase μ IO ⇒ Socket f → ByteString → μ (Maybe IfIndex)
+getIfIndex ∷ MonadBase IO μ ⇒ Socket f → ByteString → μ (Maybe IfIndex)
 getIfIndex s name
   | nameLen >= #{const IFNAMSIZ} = return Nothing
   | otherwise = withSocketFd s $ \fd →
@@ -61,7 +61,7 @@ getIfIndex s name
           Just . IfIndex <$> #{peek struct ifreq, ifr_ifindex} ptr
   where nameLen = BS.length name
 
-getIfName ∷ MonadBase μ IO ⇒ Socket f → IfIndex → μ (Maybe ByteString)
+getIfName ∷ MonadBase IO μ ⇒ Socket f → IfIndex → μ (Maybe ByteString)
 getIfName s (IfIndex ix) = withSocketFd s $ \fd → do
   allocaBytesAligned #{size struct ifreq}
                      #{alignment struct ifreq} $ \ptr → do

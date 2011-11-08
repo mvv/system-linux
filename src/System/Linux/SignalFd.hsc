@@ -291,14 +291,14 @@ instance Storable Event where
       
 -- | Create a signalfd file descriptor for the requested set of signals.
 --   See /signalfd(2)/.
-create ∷ MonadBase μ IO ⇒ CreateFlags → SignalSet → μ Fd
+create ∷ MonadBase IO μ ⇒ CreateFlags → SignalSet → μ Fd
 create flags sigmask =
   liftBase $ throwErrnoIfMinus1 "SignalFd.create" $
     withForeignPtr (unsafeCoerce sigmask) $ \p →
       c_signalfd (-1) p flags
 
 -- | Change the associated set of signals. See /signalfd(2)/.
-modify ∷ MonadBase μ IO ⇒ Fd → SignalSet → μ ()
+modify ∷ MonadBase IO μ ⇒ Fd → SignalSet → μ ()
 modify fd sigmask = liftBase $
   if fd == Fd (-1)
     then ioError $ errnoToIOError "SignalFd.modify" eBADF Nothing Nothing
@@ -307,8 +307,8 @@ modify fd sigmask = liftBase $
              c_signalfd fd p noFlags
 
 -- | Read an event.
-readEvent ∷ Fd → IO Event
-readEvent fd = do
+readEvent ∷ MonadBase IO μ ⇒ Fd → μ Event
+readEvent fd = liftBase $ do
     threadWaitRead fd
     alloca $ \p → do
       throwErrnoIf_ (/= (fromIntegral eventSize)) "SignalFd.readEvent" $
