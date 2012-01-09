@@ -140,7 +140,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Serialize
 import Data.Default
-import Data.IP.Addr
+import Network.IP.Addr
 import Control.Applicative ((<$>))
 import Control.Monad (when, void, MonadPlus(mzero), guard)
 import System.Posix.Socket
