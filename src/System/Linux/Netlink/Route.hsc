@@ -254,7 +254,7 @@ class (Show f, Default (RtFamilyAddr f), Show (RtFamilyAddr f),
   sizeOfRtAddr      ∷ f → Int
   getRtAddr         ∷ f → Get (RtFamilyAddr f)
   putRtAddr         ∷ f → Putter (RtFamilyAddr f)
-  rtFamilyNetAddr   ∷ f → RtFamilyAddr f → Word → RtFamilyNetAddr f
+  rtFamilyNetAddr   ∷ f → RtFamilyAddr f → Word8 → RtFamilyNetAddr f
   rtFamilyCode      ∷ f → Word8
 
 instance RtFamily AF_INET where
@@ -263,7 +263,7 @@ instance RtFamily AF_INET where
   sizeOfRtAddr _    = 4
   getRtAddr _       = IP4 <$> getWord32be
   putRtAddr _       = putWord32be . unIP4
-  rtFamilyNetAddr _ = mkNetAddr
+  rtFamilyNetAddr _ = netAddr
   rtFamilyCode _    = #const AF_INET
 
 data RtAttr f = InIfRtAttr    IfIndex
@@ -581,10 +581,9 @@ decodeRtNlMsg f (NlMsg tp _ bs)
           (src, dst, table, attrs) ←
             getAttrs def def (fromIntegral (tbl ∷ Word8)) []
           return (src, dst, table, reverse attrs)
-      let mkNet = rtFamilyNetAddr f
       return $ RtNlMsg { rtNlMsgNew   = tp == newRouteNlMsgType
-                       , rtNlMsgSrc   = mkNet src (fromIntegral srcLen)
-                       , rtNlMsgDst   = mkNet dst (fromIntegral dstLen)
+                       , rtNlMsgSrc   = rtFamilyNetAddr f src srcLen
+                       , rtNlMsgDst   = rtFamilyNetAddr f dst dstLen
                        , rtNlMsgTOS   = tos
                        , rtNlMsgTable = table
                        , rtNlMsgProto = RtProto proto
