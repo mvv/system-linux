@@ -6,7 +6,7 @@ module System.Linux.Netlink.Internal (
 
 import Data.Bits
 
-align4 ∷ Bits n ⇒ n → n
+align4 ∷ (Num n, Bits n) ⇒ n → n
 align4 n = (n + 3) .&. complement 3
 {-# INLINE align4 #-}
 
